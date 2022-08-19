@@ -1,0 +1,94 @@
+---
+title: "ESA WorldCover summary"
+output: 
+  html_document:
+    toc: yes
+    toc_float: true
+    number_sections: true
+---
+
+The histograms are in files, separately by state, in [`/data/histograms`](data/histograms). They were generated on Google Earth Engine (GEE), using the script found here: https://code.earthengine.google.com/40cf6468594145e60818434b9c702ecd?noload=1
+
+> WARNING: When the GEE script above is run on your internet browser, expect the browser to stall or hang for a few seconds at least. This is expected, while it sets up and initializes the several result exports the script calls for.
+
+Load libraries.
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(scales)
+```
+
+# State-wise histograms
+
+Read histograms, merge.
+```{r message=FALSE, warning=FALSE}
+statewiseHist <- list.files(path = "data/histograms/", pattern = "*.csv", full.names = TRUE) %>% 
+  map_df(~read_csv(., show_col_types = FALSE))
+```
+## Frequencies (raw pixel counts)
+
+Reshape. 
+```{r}
+histTall = statewiseHist %>%
+  select(-area_sqkm) %>% 
+  replace(is.na(.), 0) %>% 
+  pivot_longer(-ST_NM, names_to = "lc", values_to = "freq")
+```
+
+
+Visualize. Full image is [here](outputs/WorldcoverBasedLCsHistograms.jpg).
+```{r}
+histTall$lc <- as.factor(histTall$lc) %>% fct_relevel("woodland", after = 3)
+
+pPixCounts <- ggplot() +
+  geom_col(data = histTall, aes(lc, freq, fill = lc)) +
+  scale_y_continuous(labels = label_number(suffix = "M", scale = 1e-6)) +
+  facet_wrap(~ST_NM, scales = "free_y", labeller = label_wrap_gen()) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(
+    title = "Frequencies of landcover types by state",
+    subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n Land cover type",
+    y = "Count of 10m pixels \n") +
+  scale_fill_manual(
+    values = c("darksalmon", "firebrick", "violet", "darkgreen", "yellow", "pink", "lightsteelblue", "lightgreen", "orange", "lightblue", "blue"), name = "Land cover type")
+
+pPixCounts
+# ggsave("outputs/WorldcoverBasedLCsHistograms.jpg",  plot = pPixCounts, width = 4000, height = 3000, units = "px", bg = "white")
+```
+
+## Proportions of area
+
+Convert pixel counts to proportion of state's area. Reshape. 
+```{r}
+histTall_propOfAreas = statewiseHist %>%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*1e-4/area_sqkm)) %>% # pixel area = 100 sq. m = 1e-4 sq. km
+  select(-area_sqkm) %>% 
+  replace(is.na(.), 0) %>% 
+  pivot_longer(-ST_NM, names_to = "lc", values_to = "prop")
+```
+
+Visualize. Full image is [here](outputs/WorldcoverBasedLCsProportionOfAreas.jpg).
+```{r}
+histTall_propOfAreas$lc <- as.factor(histTall_propOfAreas$lc) %>% fct_relevel("woodland", after = 3)
+
+pAreaProps <- ggplot() +
+  geom_col(data = histTall_propOfAreas, aes(lc, prop, fill = lc)) +
+  facet_wrap(~ST_NM, labeller = label_wrap_gen()) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.y = element_line(colour = "grey70", size = 0.2)) +
+  labs(
+    title = "Area proportions of landcover types by state",
+    subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n Land cover type",
+    y = "Proportion of state's area \n") +
+  scale_fill_manual(
+    values = c("darksalmon", "firebrick", "violet", "darkgreen", "yellow", "pink", "lightsteelblue", "lightgreen", "orange", "lightblue", "blue"), name = "Land cover type")
+
+pAreaProps
+# ggsave("outputs/WorldcoverBasedLCsProportionOfAreas.jpg",  plot = pAreaProps, width = 4000, height = 3000, units = "px", bg = "white")
+```
