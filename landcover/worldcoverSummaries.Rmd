@@ -16,6 +16,106 @@ Load libraries.
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(scales)
+library(geojsonsf)
+library(broom)
+library(geofacet)
+library(sf)
+```
+
+# Grid-wise histograms
+
+Grid-wise histograms are available as separate GEOJSON files of collections of grids by state in [`data/histograms`](data/histograms). 
+
+They were all merged into a single GEOJSON, and duplicates were removed by column "`id`" (to de-duplicate grids along borders between adjacent states), using QGIS. For this, the following tools in QGIS' Processing Toolbox were used: [Merge Vector Layers](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgismergevectorlayers); [Delete duplicates by attribute](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgisremoveduplicatesbyattribute).
+
+```{r message=FALSE, warning=FALSE}
+gridwiseHistAllSt_wc <- geojson_sf("data/histograms/wc2020GrdWiseHist_AllStatesMerged.geojson") %>%
+  mutate(
+    across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+           as.numeric)) %>%
+  replace(is.na(.), 0) %>% 
+  mutate(name = id)
+
+# ggplot() +
+#     geom_sf(data = gridwiseHist_wc, aes(fill=woodland)) +
+#     theme_void()
+```
+
+## Create grid for geofaceting
+
+To make a figure with facetted plots for each grid where relative positions of grids are maintained, [`{geofacet}`](https://hafen.github.io/geofacet/index.html) is used. A grid of cells to hold the facets is generated here, according to [instructions in the package](https://hafen.github.io/geofacet/articles/geofacet.html#creating-your-own-grid-1).
+
+```{r}
+numCols <- 130
+numGrids <- 17550
+
+id <- seq(1, numGrids)
+gridLabels <- as.data.frame(id) %>% 
+  mutate(
+    row = ceiling(id/numCols),
+    col = ifelse(id %% numCols, id %% numCols, numCols),
+    code = id)
+
+gla <- gridwiseHistAllSt_wc %>%
+  left_join(gridLabels, c("id")) %>%
+  select(row, col, code, name) %>% 
+  st_drop_geometry()
+
+# grid_preview(gla)
+```
+
+## Proportions of area
+
+Convert pixel counts to proportion of grid's area. Reshape. 
+
+***NOTE:** The arithmetic here for calculating proportions is NOT 100% accurate, in the following way: the proportions in a grid don't add up to 1, but often go over 1 by a little bit. I (Pradeep) believe this is an artefact of the way proportions have been calculated below, which involves areas calculated in the vector-domain from high-res polygons of states and in the raster domain from pixel counts multiplied by area of a pixel. Mixing areas from these two approaches in arithmetic, particularly over large areas and with high-res vector features, is an invitation to disagreements in area values.*
+
+*For the purposes of the goal here, of visualizing relative proportions in each SoIB grid, this disagreement is not a major problem. But this will warrant a closer and more careful handling if/when this feeds into the modeling framework.*
+
+### WorldCover (10m/pixel)
+
+```{r}
+histGridTall_propOfAreas_wc = gridwiseHistAllSt_wc %>%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*1e-4/area_sqkm)) %>% # pixel area = 100 sq. m = 1e-4 sq. km
+  select(-area_sqkm) %>% 
+  pivot_longer(
+    cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+    names_to = "lc",
+    values_to = "prop")
+```
+
+Visualize. Full image is [here](outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg) (**LARGE** file!).
+
+```{r message=FALSE, warning=FALSE}
+lcPal <- c("darksalmon", "firebrick", "violet", "darkgreen", "yellow", "mediumpurple", "lightgray", "limegreen", "orange", "navy", "dodgerblue")
+bgColMatteBlack <- "#171717"
+textCol <- "lightyellow"
+
+histGridTall_propOfAreas_wc$lc <- as.factor(histGridTall_propOfAreas_wc$lc) %>% fct_relevel("woodland", after = 3)
+
+pAreaProps <- ggplot(histGridTall_propOfAreas_wc %>% mutate(dummyX = 1)) +
+  geom_col(aes(dummyX, prop, fill = lc, position = "stack")) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 48),
+    plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "Area proportions of landcover types by grid cell",
+    subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n",
+    y = "Proportion of grid's area \n") +
+  scale_fill_manual(
+    values = lcPal, name = "Land cover type")
+
+# pAreaProps
+# ggsave("outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg",  plot = pAreaProps, width = 10000, height = 10000, units = "px", limitsize = FALSE)
 ```
 
 # State-wise histograms
