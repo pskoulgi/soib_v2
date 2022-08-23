@@ -84,7 +84,7 @@ histGridTall_propOfAreas_wc = gridwiseHistAllSt_wc %>%
     values_to = "prop")
 ```
 
-Visualize. Full image is [here](outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg) (**LARGE** file!).
+Visualize. Full image is [here](outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png) (**LARGE** file!).
 
 ```{r message=FALSE, warning=FALSE}
 lcPal <- c("darksalmon", "firebrick", "violet", "darkgreen", "yellow", "mediumpurple", "lightgray", "limegreen", "orange", "navy", "dodgerblue")
@@ -115,7 +115,7 @@ pAreaProps <- ggplot(histGridTall_propOfAreas_wc %>% mutate(dummyX = 1)) +
     values = lcPal, name = "Land cover type")
 
 # pAreaProps
-# ggsave("outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg",  plot = pAreaProps, width = 10000, height = 10000, units = "px", limitsize = FALSE)
+# ggsave("outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png",  plot = pAreaProps, width = 10000, height = 10000, units = "px", limitsize = FALSE)
 ```
 
 # State-wise histograms
