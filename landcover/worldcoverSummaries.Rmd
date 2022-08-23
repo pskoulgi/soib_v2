@@ -7,7 +7,7 @@ output:
     number_sections: true
 ---
 
-The histograms are in files, separately by state, in [`/data/histograms`](data/histograms). They were generated on Google Earth Engine (GEE), using the script found here: https://code.earthengine.google.com/40cf6468594145e60818434b9c702ecd?noload=1
+The histograms are in files, separately by state, in [`/data/histograms`](data/histograms). They were generated on Google Earth Engine (GEE), using the script found here: https://code.earthengine.google.com/850c8e9d8a5b47e4d467450394490b6c?noload=1
 
 > WARNING: When the GEE script above is run on your internet browser, expect the browser to stall or hang for a few seconds at least. This is expected, while it sets up and initializes the several result exports the script calls for.
 
