@@ -269,6 +269,18 @@ library(sf)</code></pre>
            as.numeric)) %&gt;%
   replace(is.na(.), 0) %&gt;% 
   mutate(name = id)
+gridwiseHistAllSt_igbp &lt;- geojson_sf(&quot;data/histograms/modisIgbp2020GrdWiseHist.geojson&quot;) %&gt;%
+  mutate(
+    across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+           as.numeric)) %&gt;%
+  replace(is.na(.), 0) %&gt;% 
+  mutate(name = id)
+gridwiseHistAllSt_cci &lt;- geojson_sf(&quot;data/histograms/esaCci2020GrdWiseHist.geojson&quot;) %&gt;%
+  mutate(
+    across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+           as.numeric)) %&gt;%
+  replace(is.na(.), 0) %&gt;% 
+  mutate(name = id)
 
 # ggplot() +
 #     geom_sf(data = gridwiseHist_wc, aes(fill=woodland)) +
@@ -307,7 +319,7 @@ gla &lt;- gridwiseHistAllSt_wc %&gt;%
     cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
     names_to = &quot;lc&quot;,
     values_to = &quot;prop&quot;)</code></pre>
-<p>Visualize. Full image is <a href="outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg">here</a> (<strong>LARGE</strong> file!).</p>
+<p>Visualize. Full image is <a href="outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png">here</a> (<strong>LARGE</strong> file!).</p>
 <pre class="r"><code>lcPal &lt;- c(&quot;darksalmon&quot;, &quot;firebrick&quot;, &quot;violet&quot;, &quot;darkgreen&quot;, &quot;yellow&quot;, &quot;mediumpurple&quot;, &quot;lightgray&quot;, &quot;limegreen&quot;, &quot;orange&quot;, &quot;navy&quot;, &quot;dodgerblue&quot;)
 bgColMatteBlack &lt;- &quot;#171717&quot;
 textCol &lt;- &quot;lightyellow&quot;
@@ -336,7 +348,81 @@ pAreaProps &lt;- ggplot(histGridTall_propOfAreas_wc %&gt;% mutate(dummyX = 1)) +
     values = lcPal, name = &quot;Land cover type&quot;)
 
 # pAreaProps
-# ggsave(&quot;outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.jpg&quot;,  plot = pAreaProps, width = 10000, height = 10000, units = &quot;px&quot;, limitsize = FALSE)</code></pre>
+# ggsave(&quot;outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png&quot;,  plot = pAreaProps, width = 10000, height = 10000, units = &quot;px&quot;, limitsize = FALSE)</code></pre>
+</div>
+<div id="modis-igbp-500mpixel" class="section level3" number="1.2.2">
+<h3><span class="header-section-number">1.2.2</span> MODIS IGBP (500m/pixel)</h3>
+<pre class="r"><code>modisPixArea_sqkm &lt;- 500*500/1e6
+histGridTall_propOfAreas_igbp = gridwiseHistAllSt_igbp %&gt;%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*(modisPixArea_sqkm)/area_sqkm)) %&gt;%
+  select(-area_sqkm) %&gt;% 
+  pivot_longer(
+    cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+    names_to = &quot;lc&quot;,
+    values_to = &quot;prop&quot;)</code></pre>
+<p>Visualize. Full image is <a href="outputs/MODISIGBPBasedLCsProportionOfAreas_gridwise_colFull.png">here</a>.</p>
+<pre class="r"><code>histGridTall_propOfAreas_igbp$lc &lt;- as.factor(histGridTall_propOfAreas_igbp$lc) %&gt;% fct_relevel(&quot;woodland&quot;, after = 3)
+
+pAreaProps_igbp &lt;- ggplot(histGridTall_propOfAreas_igbp %&gt;% mutate(dummyX = 1)) +
+  geom_col(aes(dummyX, prop, fill = lc, position = &quot;stack&quot;)) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 48),
+    plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = &quot;Area proportions of landcover types by grid cell&quot;,
+    subtitle = &quot;Using MODIS IGBP (500m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes&quot;,
+    x = &quot;\n&quot;,
+    y = &quot;Proportion of grid&#39;s area \n&quot;) +
+  scale_fill_manual(
+    values = lcPal, name = &quot;Land cover type&quot;)
+
+# pAreaProps
+# ggsave(&quot;outputs/MODISIgbpBasedLCsProportionOfAreas_gridwise_colFull.png&quot;,  plot = pAreaProps_igbp, width = 10000, height = 10000, units = &quot;px&quot;, limitsize = FALSE)</code></pre>
+</div>
+<div id="esa-cci-300mpixel" class="section level3" number="1.2.3">
+<h3><span class="header-section-number">1.2.3</span> ESA CCI (300m/pixel)</h3>
+<pre class="r"><code>esacciPixArea_sqkm &lt;- 300*300/1e6
+histGridTall_propOfAreas_cci = gridwiseHistAllSt_cci %&gt;%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*(esacciPixArea_sqkm)/area_sqkm)) %&gt;%
+  select(-area_sqkm) %&gt;% 
+  pivot_longer(
+    cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+    names_to = &quot;lc&quot;,
+    values_to = &quot;prop&quot;)</code></pre>
+<p>Visualize. Full image is <a href="outputs/MODISIGBPBasedLCsProportionOfAreas_gridwise_colFull.png">here</a>.</p>
+<pre class="r"><code>histGridTall_propOfAreas_cci$lc &lt;- as.factor(histGridTall_propOfAreas_cci$lc) %&gt;% fct_relevel(&quot;woodland&quot;, after = 3)
+
+pAreaProps_cci &lt;- ggplot(histGridTall_propOfAreas_cci %&gt;% mutate(dummyX = 1)) +
+  geom_col(aes(dummyX, prop, fill = lc, position = &quot;stack&quot;)) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 48),
+    plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = &quot;Area proportions of landcover types by grid cell&quot;,
+    subtitle = &quot;Using ESA CCI (300m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes&quot;,
+    x = &quot;\n&quot;,
+    y = &quot;Proportion of grid&#39;s area \n&quot;) +
+  scale_fill_manual(
+    values = lcPal, name = &quot;Land cover type&quot;)
+
+# pAreaProps
+# ggsave(&quot;outputs/ESACCIBasedLCsProportionOfAreas_gridwise_colFull.png&quot;,  plot = pAreaProps_cci, width = 10000, height = 10000, units = &quot;px&quot;, limitsize = FALSE)</code></pre>
 </div>
 </div>
 </div>

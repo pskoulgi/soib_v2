@@ -35,6 +35,18 @@ gridwiseHistAllSt_wc <- geojson_sf("data/histograms/wc2020GrdWiseHist_AllStatesM
            as.numeric)) %>%
   replace(is.na(.), 0) %>% 
   mutate(name = id)
+gridwiseHistAllSt_igbp <- geojson_sf("data/histograms/modisIgbp2020GrdWiseHist.geojson") %>%
+  mutate(
+    across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+           as.numeric)) %>%
+  replace(is.na(.), 0) %>% 
+  mutate(name = id)
+gridwiseHistAllSt_cci <- geojson_sf("data/histograms/esaCci2020GrdWiseHist.geojson") %>%
+  mutate(
+    across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+           as.numeric)) %>%
+  replace(is.na(.), 0) %>% 
+  mutate(name = id)
 
 # ggplot() +
 #     geom_sf(data = gridwiseHist_wc, aes(fill=woodland)) +
@@ -116,6 +128,92 @@ pAreaProps <- ggplot(histGridTall_propOfAreas_wc %>% mutate(dummyX = 1)) +
 
 # pAreaProps
 # ggsave("outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png",  plot = pAreaProps, width = 10000, height = 10000, units = "px", limitsize = FALSE)
+```
+
+### MODIS IGBP (500m/pixel)
+
+```{r}
+modisPixArea_sqkm <- 500*500/1e6
+histGridTall_propOfAreas_igbp = gridwiseHistAllSt_igbp %>%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*(modisPixArea_sqkm)/area_sqkm)) %>%
+  select(-area_sqkm) %>% 
+  pivot_longer(
+    cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+    names_to = "lc",
+    values_to = "prop")
+```
+
+Visualize. Full image is [here](outputs/MODISIGBPBasedLCsProportionOfAreas_gridwise_colFull.png).
+
+```{r message=FALSE, warning=FALSE}
+histGridTall_propOfAreas_igbp$lc <- as.factor(histGridTall_propOfAreas_igbp$lc) %>% fct_relevel("woodland", after = 3)
+
+pAreaProps_igbp <- ggplot(histGridTall_propOfAreas_igbp %>% mutate(dummyX = 1)) +
+  geom_col(aes(dummyX, prop, fill = lc, position = "stack")) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 48),
+    plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "Area proportions of landcover types by grid cell",
+    subtitle = "Using MODIS IGBP (500m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n",
+    y = "Proportion of grid's area \n") +
+  scale_fill_manual(
+    values = lcPal, name = "Land cover type")
+
+# pAreaProps
+# ggsave("outputs/MODISIgbpBasedLCsProportionOfAreas_gridwise_colFull.png",  plot = pAreaProps_igbp, width = 10000, height = 10000, units = "px", limitsize = FALSE)
+```
+
+### ESA CCI (300m/pixel)
+
+```{r}
+esacciPixArea_sqkm <- 300*300/1e6
+histGridTall_propOfAreas_cci = gridwiseHistAllSt_cci %>%
+  mutate(across(c(bare, builtup, cropland, woodland, grassland, mixed, permafrost, savanna, shrubland, water, wetland), ~ .x*(esacciPixArea_sqkm)/area_sqkm)) %>%
+  select(-area_sqkm) %>% 
+  pivot_longer(
+    cols = c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
+    names_to = "lc",
+    values_to = "prop")
+```
+
+Visualize. Full image is [here](outputs/MODISIGBPBasedLCsProportionOfAreas_gridwise_colFull.png).
+
+```{r message=FALSE, warning=FALSE}
+histGridTall_propOfAreas_cci$lc <- as.factor(histGridTall_propOfAreas_cci$lc) %>% fct_relevel("woodland", after = 3)
+
+pAreaProps_cci <- ggplot(histGridTall_propOfAreas_cci %>% mutate(dummyX = 1)) +
+  geom_col(aes(dummyX, prop, fill = lc, position = "stack")) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 48),
+    plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "Area proportions of landcover types by grid cell",
+    subtitle = "Using ESA CCI (300m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n",
+    y = "Proportion of grid's area \n") +
+  scale_fill_manual(
+    values = lcPal, name = "Land cover type")
+
+# pAreaProps
+# ggsave("outputs/ESACCIBasedLCsProportionOfAreas_gridwise_colFull.png",  plot = pAreaProps_cci, width = 10000, height = 10000, units = "px", limitsize = FALSE)
 ```
 
 # State-wise histograms
