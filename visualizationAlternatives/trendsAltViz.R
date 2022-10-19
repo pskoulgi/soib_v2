@@ -124,9 +124,9 @@ rawTrends_distr$timegroupsf <- factor(
 )
 
 # Drop pre-2000, and plot
-rawTrends_distr <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) # %>% 
-  # filter(species == "Indian Courser")
-densRidgesPlot <- ggplot(rawTrends_distr, aes(x, timegroupsf, height = norm, fill = after_scale(alpha(colour, 0.4)), color = species)) +
+rawTrends_distr1 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) # %>% 
+# filter(species == "Indian Courser")
+densRidgesPlot <- ggplot(rawTrends_distr1, aes(x, timegroupsf, height = norm, fill = after_scale(alpha(colour, 0.4)), color = species)) +
   geom_density_ridges(stat = "identity", scale = 0.9) +
   geom_point(aes(x = nmfreqbyspec, y = timegroupsf, size = 2.5)) +
   scale_x_continuous(
@@ -148,3 +148,137 @@ densRidgesPlot <- ggplot(rawTrends_distr, aes(x, timegroupsf, height = norm, fil
   ggtitle("Using mean and se of estimated frequencies as \n mean and standard deviation, respectively, of Normal distributions")
 densRidgesPlot
 # ggsave("outputs/trendsAsDensityRidges.png", densRidgesPlot, width = 11, height = 7, bg = "white")
+
+#### Plot as density gradient ridges ####
+
+# Drop pre-2000, and plot
+rawTrends_distr5 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) %>% 
+  filter(species == "Ashy Prinia")
+densRidgesPlot5 <- ggplot(rawTrends_distr5, aes(x, timegroupsf, height = norm, fill = stat(x))) +
+  # change scale to control how much the ridges overlap vertically
+  geom_density_ridges_gradient(stat = "identity", scale = 0.8, rel_min_height = 0.01, gradient_lwd = 1, color = "white", alpha = 0.8) +
+  geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec), size = 3, shape = 21, color = "lightslategrey") +
+  scale_x_continuous(
+    breaks = c(-200, -100, 0, 100, 200),
+    labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-200, 200)) +
+  scale_fill_gradient2(
+    low = "#f1a340", mid = "#f7f7f7", high = "#998ec3", # brewer diverging PuOr https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
+    breaks = c(-200, -100, 0, 100, 200),
+    labels = c("200% decrease", "100% decrease", "Pre-2000 baseline", "100% increase", "200% increase"),
+    limits = c(-200, 200)) +
+  scale_y_discrete(expand = expansion(mult = c(0.01, 0.3))) +
+  theme_ridges(center_axis_labels = TRUE) +
+  theme(
+    panel.grid.major.x = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    legend.title = element_blank(),
+    axis.ticks.x = element_line("black")) +
+  geom_vline(xintercept = 0) +
+  guides(size = "none") +
+  ylab("time steps \n") +
+  xlab("\n change in eBird abundance index") +
+  ggtitle("Ashy Prinia (increasing)")
+densRidgesPlot5
+# ggsave("outputs/trendsAsDensGradRidges_AshyPrinia.png", densRidgesPlot5, width = 11, height = 7, bg = "white")
+
+#### TRYING multiple species density ridges in the same plot ####
+
+# # Drop pre-2000, and plot
+# rawTrends_distr7 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) # %>%
+#   # filter(species == "Ashy Prinia")
+# densRidgesPlot7 <- ggplot(rawTrends_distr7, aes(x, timegroupsf, height = norm, fill = stat(x))) +
+#   geom_density_ridges_gradient(stat = "identity", scale = 0.8, rel_min_height = 0.01, gradient_lwd = 1, color = "white", alpha = 0.8) +
+#   # geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec), size = 3, shape = 21, color = "lightgrey") +
+#   geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec, shape = species), size = 3, color = "lightgrey") +
+#   scale_shape_manual(values = c(21, 22, 23, 24)) +
+#   scale_x_continuous(
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+#     expand = c(0, 0),
+#     limits = c(-200, 200)) +
+#   scale_fill_gradient2(
+#     low = "#f1a340", mid = "#f7f7f7", high = "#998ec3", # brewer diverging PuOr https://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("200% decrease", "100% decrease", "Pre-2000 baseline", "100% increase", "200% increase"),
+#     limits = c(-200, 200)) +
+#   scale_y_discrete(expand = expansion(mult = c(0.01, 0.3))) +
+#   theme_ridges(center_axis_labels = TRUE) +
+#   theme(
+#     panel.grid.major.x = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+#     legend.title = element_blank(),
+#     axis.ticks.x = element_line("black")) +
+#   geom_vline(xintercept = 0) +
+#   guides(size = "none") +
+#   ylab("time steps \n") +
+#   xlab("\n change in eBird abundance index") +
+#   ggtitle("Multiple species combined (not working)")
+# densRidgesPlot7
+# # ggsave("outputs/trendsAsDensGradRidges_MultipleSpecies_notWorking.png", densRidgesPlot7, width = 11, height = 7, bg = "white")
+
+#### TRYING: place legend at the bottom and reorient labels ####
+# # Drop pre-2000, and plot
+# rawTrends_distr6 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) %>% 
+#   filter(species == "Red-necked Falcon")
+# densRidgesPlot6 <- ggplot(rawTrends_distr6, aes(x, timegroupsf, height = norm, fill = stat(x))) +
+#   geom_density_ridges_gradient(stat = "identity", scale = 0.9, rel_min_height = 0.01, gradient_lwd = 1, color = "lightgrey", alpha = 0.8) +
+#   geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec), size = 3, shape = 21, color = "darkgrey") +
+#   scale_x_continuous(
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+#     expand = c(0, 0),
+#     limits = c(-200, 200)) +
+#   scale_fill_gradient2(
+#     low = 'red', mid = 'white', high = 'green',
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+#     limits = c(-200, 200),
+#     guide = guide_legend(
+#       label.position = "bottom",
+#       direction = "horizontal",
+#       label.theme = element_text(angle = 90))) +
+#   scale_y_discrete(expand = expansion(mult = c(0.01, 0.3))) +
+#   theme_ridges(center_axis_labels = TRUE) +
+#   theme(
+#     panel.grid.major.x = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+#     legend.title = element_blank(),
+#     legend.position = "bottom",
+#     axis.ticks.x = element_line("black")) +
+#   geom_vline(xintercept = 0) +
+#   guides(size = "none") +
+#   ylab("time steps \n") +
+#   xlab("\n change in eBird abundance index") +
+#   ggtitle("Using mean and se of estimated frequencies as \n mean and standard deviation, respectively, of Normal distributions")
+# densRidgesPlot6
+
+#### TRYING ridgeline grey instead of white ####
+# # Drop pre-2000, and plot
+# rawTrends_distr4 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c("before 2000")])) %>% 
+#   filter(species == "Ashy Prinia")
+# densRidgesPlot4 <- ggplot(rawTrends_distr4, aes(x, timegroupsf, height = norm, fill = stat(x))) +
+#   geom_density_ridges_gradient(stat = "identity", scale = 0.9, rel_min_height = 0.01, gradient_lwd = 1, color = "darkgrey", alpha = 0.8) +
+#   geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec, size = 1.5), shape = 21, color = "lightgrey") +
+#   scale_x_continuous(
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+#     expand = c(0, 0),
+#     limits = c(-200, 200)) +
+#   scale_fill_gradient2(
+#     low = 'red', mid = 'white', high = 'green',
+#     breaks = c(-200, -100, 0, 100, 200),
+#     labels = c("-200%", "-100%", "Pre-2000 baseline", "+100%", "+200%"),
+#     limits = c(-200, 200)) +
+#   scale_y_discrete(expand = expansion(mult = c(0.01, 0.3))) +
+#   theme_ridges(center_axis_labels = TRUE) +
+#   theme(
+#     panel.grid.major.x = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+#     # legend.position = "bottom",
+#     legend.title = element_blank(),
+#     axis.ticks.x = element_line("black")) +
+#   geom_vline(xintercept = 0) +
+#   guides(size = "none") +
+#   ylab("time steps \n") +
+#   xlab("\n change in eBird abundance index") +
+#   ggtitle("Using mean and se of estimated frequencies as \n mean and standard deviation, respectively, of Normal distributions")
+# densRidgesPlot4
+
