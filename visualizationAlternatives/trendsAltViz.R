@@ -149,6 +149,110 @@ densRidgesPlot <- ggplot(rawTrends_distr1, aes(x, timegroupsf, height = norm, fi
 densRidgesPlot
 # ggsave("outputs/trendsAsDensityRidges.png", densRidgesPlot, width = 11, height = 7, bg = "white")
 
+x_tick_pre2000Bas <- seq(1999, 2018) + 0.5
+lineribbonsDiscPlot <- rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
+  group_by(timegroups, species) %>% 
+  median_qi(x, .width = c(.50, .80, .95)) %>% 
+  ggplot(aes(x = timegroups, y = x, ymin = .lower, ymax = .upper, color = species)) +
+  geom_lineribbon() +
+  geom_point(aes(size = 0.75)) +
+  scale_fill_brewer() +
+  scale_color_brewer(palette = "Greens") +
+  geom_hline(yintercept = 0) +
+  scale_x_continuous(
+    breaks = c(seq(1999, 2018), x_tick_pre2000Bas),
+    labels = c("", "2000", "2001", rep(c(""), 2006-2000-2), 
+               "2006", "2007", rep(c(""), 2010-2006-2), 
+               "2010", "2011", rep(c(""), 2012-2010-2), 
+               paste0(seq(2012, 2018)), rep(c(""), length(x_tick_pre2000Bas))),
+    limits = c(1999.5, 2018)) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  theme_minimal() +
+  theme(
+    axis.line.x = element_line(color = "darkgray", size = 0.6),
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    # axis.ticks.x = element_line(color = c(rep(NA, length(x_tick_pre2000Bas)), rep("black", length(x_tick_pre2000Bas)-1)))
+    axis.ticks.x = element_line(
+      color = c(rep(NA, length(x_tick_pre2000Bas)),
+                NA, "black", rep(NA, 2006-2000-1),
+                "black", rep(NA, 2010-2006-1),
+                "black", rep(NA, 2012-2010-1),
+                rep("black", 2018-2012+1)))) +
+  guides(size = "none", color = "none") +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n") +
+  labs(title = "Indian Courser (declining)")
+lineribbonsDiscPlot
+# ggsave("outputs/trendsAsLineribbonsDisc.png", lineribbonsDiscPlot, width = 11, height = 7, bg = "white")
+
+# rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
+#   ggplot(aes(x = timegroups, y = x, fill = stat(.width))) +
+#   stat_lineribbon(.width = ppoints(50)) +
+#   scale_fill_distiller() +
+#   # geom_point() +
+#   # geom_point(aes(x = timegroups, y = mean(x))) +
+#   # geom_point(data = medians, aes(x = timegroups, y = x)) +
+#   labs(title = "Indian Courser (declining)")
+
+medians <- rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
+  group_by(timegroups, species) %>% 
+  median_qi(x)
+lineribbonsContPlot <- ggplot() +
+  stat_lineribbon(data = filter(rawTrends_distr1, species == "Indian Courser"), aes(x = timegroups, y = x, fill = stat(.width), color = species), .width = ppoints(50), alpha = 0.2) +
+  scale_fill_distiller() +
+  scale_color_brewer(palette = "Greens") +
+  geom_point(data = medians, aes(x = timegroups, y = x, color = species, size = 0.75)) +
+  geom_hline(yintercept = 0) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  scale_x_continuous(
+    breaks = c(seq(1999, 2018), x_tick_pre2000Bas),
+    labels = c("", "2000", "2001", rep(c(""), 2006-2000-2), 
+               "2006", "2007", rep(c(""), 2010-2006-2), 
+               "2010", "2011", rep(c(""), 2012-2010-2), 
+               paste0(seq(2012, 2018)), rep(c(""), length(x_tick_pre2000Bas))),
+    limits = c(1999.5, 2018)) +
+  theme_minimal() +
+  theme(
+    axis.line.x = element_line(color = "darkgray"),
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    # legend.position = "bottom",
+    legend.title = element_blank(),
+    # axis.ticks.x = element_line("darkgray"),
+    # axis.ticks.x = element_line(color = c(rep(NA, length(x_tick_pre2000Bas)), rep("black", length(x_tick_pre2000Bas)-1)))
+    axis.ticks.x = element_line(
+      color = c(rep(NA, length(x_tick_pre2000Bas)),
+                NA, "black", rep(NA, 2006-2000-1),
+                "black", rep(NA, 2010-2006-1),
+                "black", rep(NA, 2012-2010-1),
+                rep("black", 2018-2012+1)))) +
+  guides(size = "none", color = "none") +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n") +
+  labs(title = "Indian Courser (declining)")
+lineribbonsContPlot
+# ggsave("outputs/trendsAsLineribbonsCont.png", lineribbonsContPlot, width = 11, height = 7, bg = "white")
+
+# For multiple species in lineribbon plot, refer to
+# https://github.com/EcoClimLab/growth_phenology/pull/39; 
+# https://stackoverflow.com/a/68127360
+# https://gradientdescending.com/how-to-use-multiple-color-scales-in-ggplot-with-ggnewscale/
+
+# geom_path try
 #### Plot as density gradient ridges ####
 
 # Drop pre-2000, and plot
@@ -157,6 +261,8 @@ rawTrends_distr5 <- rawTrends_distr %>% filter((timegroupsf %in% tg[! tg %in% c(
 densRidgesPlot5 <- ggplot(rawTrends_distr5, aes(x, timegroupsf, height = norm, fill = stat(x))) +
   # change scale to control how much the ridges overlap vertically
   geom_density_ridges_gradient(stat = "identity", scale = 0.8, rel_min_height = 0.01, gradient_lwd = 1, color = "white", alpha = 0.8) +
+  # geom_path(aes(x = nmfreqbyspec, y = timegroupsf)) +
+  # geom_path() +
   geom_point(aes(x = nmfreqbyspec, y = timegroupsf, fill = nmfreqbyspec), size = 3, shape = 21, color = "lightslategrey") +
   scale_x_continuous(
     breaks = c(-200, -100, 0, 100, 200),
