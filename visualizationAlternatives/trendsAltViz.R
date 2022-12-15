@@ -2,6 +2,7 @@ source('../SoIB_v2 functions.R')
 library(tidyverse)
 library(ggdist)
 library(ggridges)
+library(ggpubr)
 
 #### Read trends, standardize to pre-2000 ####
 rawTrends = read.csv("../assorted_trends_1.csv")
@@ -192,6 +193,101 @@ lineribbonsDiscPlot <- rawTrends_distr1 %>% filter(species == "Indian Courser") 
   labs(title = "Indian Courser (declining)")
 lineribbonsDiscPlot
 # ggsave("outputs/trendsAsLineribbonsDisc.png", lineribbonsDiscPlot, width = 11, height = 7, bg = "white")
+
+lineribbonsDiscPlot_blockXaxis <- rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
+  group_by(timegroups, species) %>% 
+  median_qi(x, .width = c(.50, .80, .95)) %>% 
+  ggplot(aes(x = timegroups, y = x, ymin = .lower, ymax = .upper, color = species)) +
+  geom_lineribbon() +
+  geom_point(aes(size = 0.75)) +
+  scale_fill_brewer() +
+  scale_color_brewer(palette = "Greens") +
+  geom_hline(yintercept = 0) +
+  geom_bracket(
+    inherit.aes = FALSE, 
+    xmin = c(2000, 2006, 2010, 2012, seq(2013, 2017)) + 0.5, 
+    xmax = c(2006, 2010, 2012, seq(2013, 2018)) + 0.5,
+    y.position = -130,
+    bracket.shorten = 0.15,
+    tip.length = 0.05,
+    vjust = 3,
+    label = tg[-1],
+    label.size = 3) +
+  scale_x_continuous(limits = c(1999.5, 2018.5)) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    axis.line.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()) +
+  guides(size = "none", color = "none") +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n") +
+  labs(title = "Indian Courser (declining)")
+lineribbonsDiscPlot_blockXaxis
+# ggsave("outputs/trendsAsLineribbonsDisc_blockXaxis.png", lineribbonsDiscPlot_blockXaxis, width = 11, height = 7, bg = "white")
+
+lineribbonsDiscPlot_blockXaxis_noblockLabel <- rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
+  group_by(timegroups, species) %>% 
+  median_qi(x, .width = c(.50, .80, .95)) %>% 
+  ggplot(aes(x = timegroups, y = x, ymin = .lower, ymax = .upper, color = species)) +
+  geom_lineribbon() +
+  geom_point(aes(size = 0.75)) +
+  scale_fill_brewer() +
+  scale_color_brewer(palette = "Greens") +
+  geom_hline(yintercept = 0) +
+  geom_bracket(
+    inherit.aes = FALSE, 
+    xmin = c(2000, 2006, 2010) + 0.5, 
+    xmax = c(2006, 2010, 2012) + 0.5,
+    y.position = -130,
+    bracket.shorten = 0.15,
+    # tip.length = 0.05,
+    vjust = 3,
+    # label = tg[-1],
+    label = c("", "", "")) +
+  scale_x_continuous(
+    breaks = c(seq(1999, 2018), x_tick_pre2000Bas),
+    labels = c("", "2000", "2001", rep(c(""), 2006-2000-2), 
+               "2006", "2007", rep(c(""), 2010-2006-2), 
+               "2010", "2011", rep(c(""), 2012-2010-2), 
+               paste0(seq(2012, 2018)), rep(c(""), length(x_tick_pre2000Bas))),
+    limits = c(1999.5, 2018)) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  theme_minimal() +
+  theme(
+    axis.line.x = element_line(color = "darkgray", size = 0.6),
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    # axis.ticks.x = element_line(color = c(rep(NA, length(x_tick_pre2000Bas)), rep("black", length(x_tick_pre2000Bas)-1)))
+    axis.ticks.x = element_line(
+      color = c(rep(NA, length(x_tick_pre2000Bas)),
+                NA, "black", rep(NA, 2006-2000-1),
+                "black", rep(NA, 2010-2006-1),
+                "black", rep(NA, 2012-2010-1),
+                rep("black", 2018-2012+1)))) +
+  guides(size = "none", color = "none") +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n") +
+  labs(title = "Indian Courser (declining)")
+lineribbonsDiscPlot_blockXaxis_noblockLabel
+# ggsave("outputs/trendsAsLineribbonsDisc_blockXaxis_noblockLabel.png", lineribbonsDiscPlot_blockXaxis_noblockLabel, width = 11, height = 7, bg = "white")
 
 # rawTrends_distr1 %>% filter(species == "Indian Courser") %>% 
 #   ggplot(aes(x = timegroups, y = x, fill = stat(.width))) +
