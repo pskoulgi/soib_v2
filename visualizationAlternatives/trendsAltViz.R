@@ -3,6 +3,7 @@ library(tidyverse)
 library(ggdist)
 library(ggridges)
 library(ggpubr)
+library(wesanderson)
 
 #### Read trends, standardize to pre-2000 ####
 rawTrends = read.csv("../assorted_trends_1.csv")
@@ -344,9 +345,109 @@ lineribbonsContPlot
 # ggsave("outputs/trendsAsLineribbonsCont.png", lineribbonsContPlot, width = 11, height = 7, bg = "white")
 
 # For multiple species in lineribbon plot, refer to
+# https://github.com/mjskay/tidybayes/issues/103
 # https://github.com/EcoClimLab/growth_phenology/pull/39; 
 # https://stackoverflow.com/a/68127360
 # https://gradientdescending.com/how-to-use-multiple-color-scales-in-ggplot-with-ggnewscale/
+
+medians_allSpecies <- rawTrends_distr1 %>%
+  group_by(timegroups, species) %>% 
+  median_qi(x)
+lineribbonsDiscPlot_blockXaxis_multSpecies <- ggplot() +
+  stat_lineribbon(
+    data = rawTrends_distr1, 
+    aes(
+      x = timegroups, 
+      y = x, 
+      fill = species, 
+      color = species,
+      group = paste(group, after_stat(.width))),
+    .width = c(.5, .8, .95), 
+    alpha = 0.25) +
+  scale_color_manual(values = wes_palette("BottleRocket2"), guide = FALSE) +
+  scale_fill_manual(values = wes_palette("BottleRocket2")) +
+  geom_point(data = medians_allSpecies, aes(x = timegroups, y = x, color = species, size = 0.75)) +
+  geom_hline(yintercept = 0) +
+  geom_bracket(
+    inherit.aes = FALSE, 
+    xmin = c(2000, 2006, 2010, 2012, seq(2013, 2017)) + 0.5, 
+    xmax = c(2006, 2010, 2012, seq(2013, 2018)) + 0.5,
+    y.position = -130,
+    bracket.shorten = 0.15,
+    vjust = 3,
+    label = tg[-1],
+    label.size = 3) +
+  scale_x_continuous(limits = c(1999.5, 2018.5)) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    legend.position = "top",
+    axis.line.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()) +
+  coord_cartesian(expand = FALSE, clip = "off") +
+  guides(size = "none", color = "none", fill = guide_legend(override.aes= list(alpha = 0.8))) +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n")
+lineribbonsDiscPlot_blockXaxis_multSpecies
+# ggsave("outputs/trendsAsLineribbonsDisc_multSpecies.png", lineribbonsDiscPlot_blockXaxis_multSpecies, width = 11, height = 7, bg = "white")
+
+lineribbonsContPlot_blockXaxis_multSpecies <- ggplot() +
+  stat_lineribbon(
+    data = rawTrends_distr1, 
+    aes(
+      x = timegroups, 
+      y = x, 
+      fill = species, 
+      color = species,
+      group = paste(group, after_stat(.width))),
+    .width = ppoints(50),
+    alpha = 1/50) +
+  scale_color_manual(values = wes_palette("BottleRocket2")) +
+  scale_fill_manual(values = wes_palette("BottleRocket2")) +
+  geom_point(data = medians_allSpecies, aes(x = timegroups, y = x, color = species, size = 0.75)) +
+  geom_hline(yintercept = 0) +
+  geom_bracket(
+    inherit.aes = FALSE, 
+    xmin = c(2000, 2006, 2010, 2012, seq(2013, 2017)) + 0.5, 
+    xmax = c(2006, 2010, 2012, seq(2013, 2018)) + 0.5,
+    y.position = -130,
+    bracket.shorten = 0.15,
+    vjust = 3,
+    label = tg[-1],
+    label.size = 3) +
+  scale_x_continuous(limits = c(1999.5, 2018.5)) +
+  scale_y_continuous(
+    breaks = c(-100, 0, 100, 200),
+    labels = c("-100%", "Pre-2000 baseline", "+100%", "+200%"),
+    expand = c(0, 0),
+    limits = c(-150, 300)) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_line(linetype = "dotted", size = 0.6, color = "darkgray"),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    legend.title = element_blank(),
+    legend.position = "top",
+    axis.line.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()) +
+  coord_cartesian(expand = FALSE, clip = "off") +
+  guides(size = "none", color = "none", fill = guide_legend(override.aes= list(alpha = 0.8))) +
+  xlab("\n time steps") +
+  ylab("change in eBird abundance index \n")
+lineribbonsContPlot_blockXaxis_multSpecies
+# ggsave("outputs/trendsAsLineribbonsCont_multSpecies.png", lineribbonsContPlot_blockXaxis_multSpecies, width = 11, height = 7, bg = "white")
 
 # geom_path try
 #### Plot as density gradient ridges ####
