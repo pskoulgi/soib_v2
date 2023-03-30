@@ -20,6 +20,7 @@ library(geojsonsf)
 library(broom)
 library(geofacet)
 library(sf)
+library(patchwork)
 ```
 
 # Grid-wise histograms
@@ -130,6 +131,183 @@ pAreaProps <- ggplot(histGridTall_propOfAreas_wc %>% mutate(dummyX = 1)) +
 # ggsave("outputs/WorldcoverBasedLCsProportionOfAreas_gridwise_colFull.png",  plot = pAreaProps, width = 10000, height = 10000, units = "px", limitsize = FALSE)
 ```
 
+#### Habitat masks
+Grid-scale masks are created for the following cover types:
+* woodland
+* open natural ecosystems: combines bare, grassland, shrubland, savanna
+* cropland
+
+```{r}
+gridwiseHabPropAllSt_wc <- gridwiseHistAllSt_wc %>%
+  mutate(
+    across(c(bare, builtup, cropland, woodland, 
+             grassland, mixed, permafrost, savanna, 
+             shrubland, water, wetland),
+           ~ .x*1e-4/area_sqkm)) %>% # pixel area = 100 sq. m = 1e-4 sq. km
+  mutate(one = bare + grassland + shrubland + savanna) %>% 
+  select(!c(area_sqkm, layer, path, name,
+            bare, grassland, shrubland, savanna, 
+            builtup, mixed, water, wetland, permafrost))
+```
+
+Grids are ranked by the proportion of cover types they have, so that top certain percentage of them can be used as their mask. Used ranking functions (help [here](https://dplyr.tidyverse.org/reference/ranking.html)), 
+
+```{r}
+ gridwiseHabPropRankedAllSt_wc<- gridwiseHabPropAllSt_wc %>% # head(10) %>%
+  mutate(
+    # woodlandRank = order(order(woodland, decreasing = TRUE)),
+    # woodlandMinRank = min_rank(woodland),
+    # woodlandPercRank = percent_rank(woodland),
+    woodlandNorm = woodland/max(woodland),
+    woodlandReverseRank = order(order(woodland)),
+    woodlandCumDist = cume_dist(woodland),
+    oneNorm = one/max(one),
+    oneReverseRank = order(order(one)),
+    oneCumDist = cume_dist(one),
+    croplandNorm = cropland/max(cropland),
+    croplandReverseRank = order(order(cropland)),
+    croplandCumDist = cume_dist(cropland),
+    ) #%>% 
+  # arrange(woodlandCumDist) %>%
+  # select(starts_with("woodland"))
+```
+
+Make plots and save
+
+```{r}
+gridwiseHabPropRankedAllStTall_wc <- gridwiseHabPropRankedAllSt_wc %>%
+  pivot_longer(
+    cols = starts_with("woodland") | starts_with("one") | starts_with("cropland"),
+    names_to = "lc",
+    values_to = "prop")
+```
+
+```{r}
+
+gridwiseHabPropRankedWoodlandAllStTall_wc <- gridwiseHabPropRankedAllStTall_wc %>% 
+  filter(lc == "woodland" | lc == "woodlandNorm" |
+         lc == "woodlandReverseRank" | lc == "woodlandCumDist")
+
+gridwiseHabPropRankedWoodlandAllStTall_wc$lc <- as.factor(gridwiseHabPropRankedWoodlandAllStTall_wc$lc)
+
+wlAreaNorm <- ggplot(
+  gridwiseHabPropRankedWoodlandAllStTall_wc %>% 
+    mutate(dummyX = 1) %>% 
+    filter(lc == "woodlandNorm")
+  ) +
+  geom_col(aes(dummyX, prop, fill = lc), show.legend = FALSE) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 36),
+    # plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "Woodland area as a proportion of grid area, normalized by max woodland area proportion.",
+    x = "\n",
+    y = "\n") +
+  scale_fill_manual(values = c("darkgreen"))
+
+# wlAreaNorm
+# ggsave("outputs/woodlandNormProps_gridwise_wc.png",  plot = wlAreaNorm, width = 9000, height = 10000, units = "px", limitsize = FALSE)
+
+wlAreaTop <- ggplot(
+  gridwiseHabPropRankedWoodlandAllStTall_wc %>% 
+    mutate(dummyX = 1, dummyY = 1) %>% 
+    filter(lc == "woodlandCumDist") %>% 
+    mutate(maskStr = if_else(prop > 0.7, "true", "false"))
+  ) +
+  geom_col(aes(dummyX, dummyY, fill = maskStr), show.legend = FALSE) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 36),
+    # plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "Woodland mask, as top 30% woodland grids",
+    # subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n",
+    y = "\n") +
+  scale_fill_manual(values = c("black", "darkgreen"), breaks = c("false", "true"))
+# ggsave("outputs/woodlandTops_gridwise_wc.png",  plot = wlAreaTop, width = 9000, height = 10000, units = "px", limitsize = FALSE)
+
+# ggsave("outputs/woodlandHabMask_gridwise_wc.png",  plot = wlAreaNorm + wlAreaTop, width = 18000, height = 10000, units = "px", limitsize = FALSE)
+```
+
+
+```{r}
+
+gridwiseHabPropRankedOneAllStTall_wc <- gridwiseHabPropRankedAllStTall_wc %>% 
+  filter(lc == "one" | lc == "oneNorm" |
+         lc == "oneReverseRank" | lc == "oneCumDist")
+
+gridwiseHabPropRankedOneAllStTall_wc$lc <- as.factor(gridwiseHabPropRankedOneAllStTall_wc$lc)
+
+oneAreaNorm <- ggplot(
+  gridwiseHabPropRankedOneAllStTall_wc %>% 
+    mutate(dummyX = 1) %>% 
+    filter(lc == "oneNorm")
+  ) +
+  geom_col(aes(dummyX, prop, fill = lc), show.legend = FALSE) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 36),
+    # plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "ONE area as a proportion of grid area, normalized by max ONE area proportion.",
+    x = "\n",
+    y = "\n") +
+  scale_fill_manual(values = c("orange"))
+
+# oneAreaNorm
+# ggsave("outputs/oneNormProps_gridwise_wc.png",  plot = oneAreaNorm, width = 9000, height = 10000, units = "px", limitsize = FALSE)
+
+oneAreaTop <- ggplot(
+  gridwiseHabPropRankedOneAllStTall_wc %>% 
+    mutate(dummyX = 1, dummyY = 1) %>% 
+    filter(lc == "oneCumDist") %>% 
+    mutate(maskStr = if_else(prop > 0.7, "true", "false"))
+  ) +
+  geom_col(aes(dummyX, dummyY, fill = maskStr), show.legend = FALSE) +
+  facet_geo(~ id, grid = gla) + 
+  scale_y_continuous(n.breaks = 2) +
+  theme_minimal() +
+  theme(
+    text = element_text(colour = textCol),
+    title = element_text(size = 36),
+    # plot.subtitle = element_text(size = 36),
+    plot.background = element_rect(fill = bgColMatteBlack),
+    axis.text.x = element_blank(),
+    panel.grid = element_blank(),
+    strip.text = element_blank()) +
+  labs(
+    title = "ONE mask, as top 30% ONE grids",
+    # subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
+    x = "\n",
+    y = "\n") +
+  scale_fill_manual(values = c("black", "orange"), breaks = c("false", "true"))
+# ggsave("outputs/oneTops_gridwise_wc.png",  plot = oneAreaTop, width = 9000, height = 10000, units = "px", limitsize = FALSE)
+
+# ggsave("outputs/oneHabMask_gridwise_wc.png",  plot = oneAreaNorm + oneAreaTop, width = 18000, height = 10000, units = "px", limitsize = FALSE)
+```
 ### MODIS IGBP (500m/pixel)
 
 ```{r}
