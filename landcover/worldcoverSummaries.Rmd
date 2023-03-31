@@ -214,7 +214,7 @@ wlAreaNorm <- ggplot(
     panel.grid = element_blank(),
     strip.text = element_blank()) +
   labs(
-    title = "Woodland area as a proportion of grid area, normalized by max woodland area proportion.",
+    title = "Woodland area as a proportion of grid area, normalized by max woodland area proportion. \n",
     x = "\n",
     y = "\n") +
   scale_fill_manual(values = c("darkgreen"))
@@ -241,7 +241,7 @@ wlAreaTop <- ggplot(
     panel.grid = element_blank(),
     strip.text = element_blank()) +
   labs(
-    title = "Woodland mask, as top 30% woodland grids",
+    title = "Woodland mask, as top 30% woodland grids \n",
     # subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
     x = "\n",
     y = "\n") +
@@ -278,7 +278,7 @@ oneAreaNorm <- ggplot(
     panel.grid = element_blank(),
     strip.text = element_blank()) +
   labs(
-    title = "ONE area as a proportion of grid area, normalized by max ONE area proportion.",
+    title = "ONE area as a proportion of grid area, normalized by max ONE area proportion. \n",
     x = "\n",
     y = "\n") +
   scale_fill_manual(values = c("orange"))
@@ -305,7 +305,7 @@ oneAreaTop <- ggplot(
     panel.grid = element_blank(),
     strip.text = element_blank()) +
   labs(
-    title = "ONE mask, as top 30% ONE grids",
+    title = "ONE mask, as top 30% ONE grids \n",
     # subtitle = "Using ESA WorldCover (10m/pixel) landcover map for 2020, with original classes remapped to bird-relevant classes",
     x = "\n",
     y = "\n") +
