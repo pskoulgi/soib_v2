@@ -30,7 +30,13 @@ Grid-wise histograms are available as separate GEOJSON files of collections of g
 They were all merged into a single GEOJSON, and duplicates were removed by column "`id`" (to de-duplicate grids along borders between adjacent states), using QGIS. For this, the following tools in QGIS' Processing Toolbox were used: [Merge Vector Layers](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgismergevectorlayers); [Delete duplicates by attribute](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgisremoveduplicatesbyattribute).
 
 ```{r message=FALSE, warning=FALSE}
-gridwiseHistAllSt_wc <- geojson_sf("data/histograms/wc2020GrdWiseHist_AllStatesMerged.geojson") %>%
+gridwiseHistAllSt_wc <- geojson_sf("data/histograms/wc2021GrdWiseHist_AllStatesMerged.geojson") %>%
+  rename(shrubland = freq_shrubland, woodland = freq_woodland,
+         builtup = freq_builtup, grassland = freq_grassland,
+         cropland = freq_cropland, bare = freq_bare,
+         water = freq_water, mixed = freq_mixed,
+         permafrost = freq_permafrost, savanna = freq_savanna,
+         wetland = freq_wetland) %>% 
   mutate(
     across(c(shrubland, woodland, builtup, grassland, cropland, bare, water, mixed, permafrost, savanna, wetland),
            as.numeric)) %>%
