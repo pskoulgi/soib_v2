@@ -178,6 +178,20 @@ Grids are ranked by the proportion of cover types they have, so that top certain
   # select(starts_with("woodland"))
 ```
 
+Calculate proportion of each habitat type for all of India. This is to be used as percent threshold in deciding the habitat masks.
+```{r}
+totalExtents <- gridwiseHistAllSt_wc %>%
+  mutate(
+    across(c(bare, builtup, cropland, woodland,
+             grassland, mixed, permafrost, savanna,
+             shrubland, water, wetland),
+           ~ .x*1e-4)) %>% # pixel area = 100 sq. m = 1e-4 sq. km
+  mutate(one = bare + grassland + shrubland + savanna) %>% 
+  summarise(sOne = sum(one), sWdl = sum(woodland), sTot = sum(area_sqkm))
+propOne = totalExtents$sOne/totalExtents$sTot
+propWdl = totalExtents$sWdl/totalExtents$sTot
+```
+
 Make plots and save
 
 ```{r}
@@ -226,7 +240,7 @@ wlAreaTop <- ggplot(
   gridwiseHabPropRankedWoodlandAllStTall_wc %>% 
     mutate(dummyX = 1, dummyY = 1) %>% 
     filter(lc == "woodlandCumDist") %>% 
-    mutate(maskStr = if_else(prop > 0.7, "true", "false"))
+    mutate(maskStr = if_else(prop > 1-propWdl, "true", "false"))
   ) +
   geom_col(aes(dummyX, dummyY, fill = maskStr), show.legend = FALSE) +
   facet_geo(~ id, grid = gla) + 
@@ -290,7 +304,7 @@ oneAreaTop <- ggplot(
   gridwiseHabPropRankedOneAllStTall_wc %>% 
     mutate(dummyX = 1, dummyY = 1) %>% 
     filter(lc == "oneCumDist") %>% 
-    mutate(maskStr = if_else(prop > 0.7, "true", "false"))
+    mutate(maskStr = if_else(prop > 1-propOne, "true", "false"))
   ) +
   geom_col(aes(dummyX, dummyY, fill = maskStr), show.legend = FALSE) +
   facet_geo(~ id, grid = gla) + 
