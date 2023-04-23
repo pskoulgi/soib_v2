@@ -114,7 +114,7 @@ gridwiseHabMaskAddedAllSt <- gridwiseHabPropRankedAllSt_wc %>%
     maskWdl = if_else(woodlandCumDist > 1-propWdl, 1, 0),
     maskOne = if_else(     oneCumDist > 1-propOne, 1, 0),
     maskCrp = if_else(croplandCumDist > 1-propCrp, 1, 0)) %>% 
-  select(woodland, maskWdl, cropland, maskCrp, one, maskOne)
+  select(GRID_G1, woodland, maskWdl, cropland, maskCrp, one, maskOne)
 
 wdlNumCells <- gridwiseHabMaskAddedAllSt %>% filter(maskWdl == 1) %>% nrow()
 crpNumCells <- gridwiseHabMaskAddedAllSt %>% filter(maskCrp == 1) %>% nrow()
