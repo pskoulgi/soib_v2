@@ -8,9 +8,7 @@ output:
 date: "`r Sys.Date()`"
 ---
 
-The histograms were generated on Google Earth Engine (GEE), using the following script: https://code.earthengine.google.com/47055c8a1be42318e2a3817e35e1c8f3?noload=1
-
-> WARNING: When the GEE script above is run on your internet browser, expect the browser to stall or hang for a few seconds at least. This is expected, while it sets up and initializes the several result exports the script calls for.
+The histograms were generated on Google Earth Engine (GEE), using the following script: https://code.earthengine.google.com/d7456474434eb293662f2373e3a7f549?noload=1
 
 Load libraries.
 
@@ -22,11 +20,10 @@ library(sf)
 
 # Read grid-wise histograms
 
-Grid-wise histograms (column values are counts of 10mx10m pixels) were first generated on GEE state-wise. They were all then merged into a single GEOJSON, and duplicates were removed by column "`GRID_G1`" (to de-duplicate grids along borders between adjacent states), using QGIS. For this, the following tools in QGIS' Processing Toolbox were used: [Merge Vector Layers](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgismergevectorlayers); [Delete duplicates by attribute](https://docs.qgis.org/3.22/en/docs/user_manual/processing_algs/qgis/vectorgeneral.html#qgisremoveduplicatesbyattribute).
-
+Grid-wise histograms (column values are counts of 10mx10m pixels) were first generated on GEE, for all grid cells at once.
 
 ```{r message=FALSE, warning=FALSE}
-gridHists <- geojson_sf("data/histograms/wc2021GrdWiseNew25kmHist_AllStatesMerged.geojson") %>%
+gridHists <- geojson_sf("data/histograms/wc2021Grd25kmHist_allGrids.geojson") %>%
   rename(shrubland = freq_shrubland, woodland = freq_woodland,
          builtup = freq_builtup, grassland = freq_grassland,
          cropland = freq_cropland, bare = freq_bare,
@@ -59,7 +56,7 @@ Convert pixel counts to proportion of grid's area.
 ***NOTE:** The column `area_sqkm` was generated from calcumations in the vector domain, and pixel counts in the other columns are from raster domain. These two approaches tend to yield slightly different values for areas. For calculation of proportions here, total area of grid is taken to be sum of pixel counts of all land covers, because of which proportions will be bounded between 0 and 1. Only when pixel counts of all land covers are 0 (eg. some atolls in Lakshadweep), total area is taken to be the area calculated in the vector domain.*
 
 
-#### Habitat masks
+## Habitat masks
 Grid-scale masks are created for the following cover types:
 * woodland
 * open natural ecosystems: combines bare, grassland, shrubland, savanna
@@ -75,7 +72,7 @@ gridwiseHabPropAllSt_wc <- gridHists %>%
            ~ .x/totalArea)) %>%
   # ONE as an omnibus class
   mutate(one = bare + grassland + shrubland + savanna) %>% 
-  select(!c(totalArea, area_sqkm, layer,
+  select(!c(totalArea, area_sqkm,
             bare, grassland, shrubland, savanna, 
             builtup, mixed, water, wetland, permafrost))
 ```
@@ -99,6 +96,7 @@ Grids are ranked by the proportion of cover types they have, so that top certain
 To choose a meaningful value for selecting the masks, calculate proportion of each habitat type for all of India. Use this as as percent threshold in deciding the habitat masks.
 ```{r}
 totalExtents <- gridHists %>% 
+  filter(GRID_G1 != "8671") %>% # problem grid in WB: a GeometryCollection leading to a "s2_unary_union() for multidimensional collections not implemented" error
   mutate(one = bare + grassland + shrubland + savanna) %>% 
   summarise(sOne = sum(one), sWdl = sum(woodland), sCrp = sum(cropland), sTot = sum(totalArea))
 propOne = totalExtents$sOne/totalExtents$sTot
@@ -127,6 +125,6 @@ oneNumCells/nrow(gridwiseHabMaskAddedAllSt)
 ```
 
 ```{r}
-st_write(gridwiseHabMaskAddedAllSt %>% st_as_sf(), "outputs/soibV2GridsIN_habMasksAdded.shp")
+st_write(gridwiseHabMaskAddedAllSt %>% st_as_sf(), "outputs/soibV2GridsIN_habMasksAdded.geojson")
 ```
 
